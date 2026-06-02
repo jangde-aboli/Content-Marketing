@@ -3,7 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_URLCONF = 'content_marketing.urls'
-SECRET_KEY = 'django-content-marketing-tool-pass'
+SECRET_KEY = 'secret key'
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
