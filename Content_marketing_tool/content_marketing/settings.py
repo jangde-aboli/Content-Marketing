@@ -61,10 +61,10 @@ MIDDLEWARE = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'content_marketing_seo',     # ✅ name of your DB
-        'USER': 'postgres',                   # ✅ your DB username
-        'PASSWORD': 'tr0ub4dor&3',   # ✅ your password
-        'HOST': 'nucleus.ckojnefw0d56.us-west-1.rds.amazonaws.com',
-        'PORT': '5432',
+        'NAME': 'db',     # ✅ name of your DB
+        'USER': 'username',                   # ✅ your DB username
+        'PASSWORD': 'password',   # ✅ your password
+        'HOST': 'host',
+        'PORT': 'port',
     }
 }
