@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Publication Sites</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+        .edit-form { display: none; }
+        .edit-icon { cursor: pointer; color: #007bff; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+        function toggleEdit(id) {
+            document.getElementById("display-" + id).style.display = "none";
+            document.getElementById("edit-" + id).style.display = "table-row";
+        }
+
+        $(document).ready(function() {
+            // Clone header row for filters
+            $('#sites-table thead tr').clone(true).appendTo('#sites-table thead').addClass('filters');
+
+            // Initialize DataTable
+            var table = $('#sites-table').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                pageLength: 100,
+                lengthMenu: [100, 200, 500],
+                paging: true,
+                searching: true,
+                info: true,
+                processing: true,
+                deferRender: true,
+                ordering: true,  // Enable sorting
+                order: [[0, 'desc']],
+                initComplete: function () {
+                    var api = this.api();
+
+                    api.columns().eq(0).each(function(colIdx) {
+                        if (colIdx === 12) return; // skip Edit column
+                        var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+
+                        var uniqueValues = api.column(colIdx).data().toArray()
+                            .map(d => $('<div>').html(d).text().trim())
+                            .filter((v, i, a) => a.indexOf(v) === i)
+                            .sort();
+
+                        var select = $('<select class="form-select form-select-sm"><option value="">All</option></select>')
+                            .appendTo($(cell).empty())
+                            .on('change', function () {
+                                var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                                api.column(colIdx).search(val ? '^' + val + '$' : '', true, false).draw();
+                            });
+
+                        uniqueValues.forEach(function(d) {
+                            select.append('<option value="' + d + '">' + d + '</option>')
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body class="p-4">
+
+<h2>Publication Sites</h2>
+
+<table id="sites-table" class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Domain</th>
+            <th>Category</th>
+            <th>DR</th>
+            <th>DA</th>
+            <th>Spam Score</th>
+            <th>Similarweb Traffic</th>
+            <th>Indian Traffic</th>
+            <th>Country</th>
+            <th>Index Pages</th>
+            <th>HM Score</th>
+            <th>Price</th>
+            <th>Link Type</th>
+            <th>Edit</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for site in sites %}
+        <tr id="display-{{ site.id }}">
+            <td>{{ site.domain }}</td>
+            <td>{{ site.category }}</td>
+            <td>{{ site.dr }}</td>
+            <td>{{ site.da }}</td>
+            <td>{{ site.spam_score }}</td>
+            <td>{{ site.similarweb_traffic }}</td>
+            <td>{{ site.indian_traffic }}</td>
+            <td>{{ site.country }}</td>
+            <td>{{ site.index_pages }}</td>
+            <td>{{ site.hm_score }}</td>
+            <td>{{ site.price }}</td>
+            <td>{{ site.link_type }}</td>
+            <td><span class="edit-icon" onclick="toggleEdit({{ site.id }})">&#9998;</span></td>
+        </tr>
+
+        <tr id="edit-{{ site.id }}" class="edit-form">
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ site.id }}">
+                <td><input type="text" name="domain" value="{{ site.domain }}" class="form-control"></td>
+                <td><input type="text" name="category" value="{{ site.category }}" class="form-control"></td>
+                <td><input type="number" name="dr" value="{{ site.dr }}" class="form-control"></td>
+                <td><input type="number" name="da" value="{{ site.da }}" class="form-control"></td>
+                <td><input type="text" name="spam_score" value="{{ site.spam_score }}" class="form-control"></td>
+                <td><input type="text" name="similarweb_traffic" value="{{ site.similarweb_traffic }}" class="form-control"></td>
+                <td><input type="text" name="indian_traffic" value="{{ site.indian_traffic }}" class="form-control"></td>
+                <td><input type="text" name="country" value="{{ site.country }}" class="form-control"></td>
+                <td><input type="text" name="index_pages" value="{{ site.index_pages }}" class="form-control"></td>
+                <td><input type="text" name="hm_score" value="{{ site.hm_score }}" class="form-control"></td>
+                <td><input type="text" name="price" value="{{ site.price }}" class="form-control"></td>
+                <td><input type="text" name="link_type" value="{{ site.link_type }}" class="form-control"></td>
+                <td><button type="submit" class="btn btn-success btn-sm">Save</button></td>
+            </form>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

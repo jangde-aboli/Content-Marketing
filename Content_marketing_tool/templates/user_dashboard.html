@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ selected_user }}'s Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background-color: #f5f5f5;
+        }
+        .cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            flex: 1;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .card h2 { margin: 0; font-size: 32px; color: #333; }
+        .card p { margin: 8px 0 0; font-size: 16px; color: #777; }
+        .chart-options { margin-bottom: 20px; }
+        .chart-container {
+            margin-bottom: 50px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #echartContainer {
+            height: 400px;
+            width: 80%;
+        }
+        table { width: 100%; border-collapse: collapse; background-color: #fff; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background-color: #f0f0f0; }
+        a { color: #007bff; }
+        .edit-form { display: none; }
+        .edit-icon { cursor: pointer; color: #007bff; font-size: 16px; }
+        .filters { display: flex; gap: 10px; margin-bottom: 20px; }
+    </style>
+    <script>
+        function toggleEdit(id) {
+            document.getElementById("display-" + id).style.display = "none";
+            document.getElementById("edit-" + id).style.display = "table-row";
+        }
+
+        window.addEventListener('resize', function() {
+            if (window.chart) window.chart.resize();
+        });
+    </script>
+</head>
+<body>
+
+    <h1>{{ selected_user }}'s Dashboard</h1>
+
+    <!-- Filters -->
+    <form method="get" class="filters">
+        <label><strong>User:</strong></label>
+        <select name="user" onchange="this.form.submit()">
+            {% for user in users %}
+                <option value="{{ user }}" {% if user == selected_user %}selected{% endif %}>{{ user }}</option>
+            {% endfor %}
+        </select>
+
+        <label><strong>Project:</strong></label>
+        <select name="project" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for p in projects %}
+                <option value="{{ p }}" {% if p == selected_project %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+
+        <label><strong>Month:</strong></label>
+        <select name="month" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for m in months %}
+                <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Summary Cards -->
+    <div class="cards">
+        <div class="card"><h2>{{ total_projects }}</h2><p>Total Projects</p></div>
+        <div class="card"><h2>{{ allocated_links }}</h2><p>Allocated Links</p></div>
+        <div class="card"><h2>{{ live_links }}</h2><p>Live Links</p></div>
+        <div class="card"><h2>{{ pending_links }}</h2><p>Pending Links</p></div>
+    </div>
+
+    <!-- Chart Type Selector -->
+    <div class="chart-options">
+        <label><strong>Choose Chart Type:</strong></label>
+        <select id="chartType" onchange="renderChart()">
+            <option value="bar">Bar</option>
+            <option value="line">Line</option>
+            <option value="pie">Pie</option>
+        </select>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+        <div id="echartContainer"></div>
+    </div>
+
+    <!-- Table -->
+    <h3>Link Details</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Project</th>
+                <th>Publication Site</th>
+                <th>Month</th>
+                <th>Keyword 1</th>
+                <th>URL Page 1</th>
+                <th>Keyword 2</th>
+                <th>URL Page 2</th>
+                <th>Status</th>
+                <th>Live URL</th>
+                <th>Live Date</th>
+                <th>Price</th>
+                <th>Invoice No.</th>
+                <th>Blogger</th>
+                <th>Collected</th>
+                <th>Payment</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_data %}
+            <tr id="display-{{ row.id }}">
+                <td>{{ row.project_name }}</td>
+                <td>{{ row.publication_site }}</td>
+                <td>{{ row.month }}</td>
+                <td>{{ row.keyword_1 }}</td>
+                <td><a href="{{ row.url_page_1 }}" target="_blank">{{ row.url_page_1 }}</a></td>
+                <td>{{ row.keyword_2 }}</td>
+                <td><a href="{{ row.url_page_2 }}" target="_blank">{{ row.url_page_2 }}</a></td>
+                <td>{{ row.status }}</td>
+                <td><a href="{{ row.live_url }}" target="_blank">{{ row.live_url }}</a></td>
+                <td>{{ row.live_url_date }}</td>
+                <td>{{ row.price }}</td>
+                <td>{{ row.invoice_number }}</td>
+                <td>{{ row.blogger_name }}</td>
+                <td>{{ row.collected_status }}</td>
+                <td>{{ row.payment_status }}</td>
+                <td><span class="edit-icon" onclick="toggleEdit({{ row.id }})">&#9998;</span></td>
+            </tr>
+            <tr id="edit-{{ row.id }}" class="edit-form">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.id }}">
+                    <td><input type="text" name="project_name" value="{{ row.project_name }}" class="form-control"></td>
+                    <td><input type="text" name="publication_site" value="{{ row.publication_site }}" class="form-control"></td>
+                    <td><input type="text" name="month" value="{{ row.month }}" class="form-control"></td>
+                    <td><input type="text" name="keyword_1" value="{{ row.keyword_1 }}" class="form-control"></td>
+                    <td><input type="text" name="url_page_1" value="{{ row.url_page_1 }}" class="form-control"></td>
+                    <td><input type="text" name="keyword_2" value="{{ row.keyword_2 }}" class="form-control"></td>
+                    <td><input type="text" name="url_page_2" value="{{ row.url_page_2 }}" class="form-control"></td>
+                    <td><input type="text" name="status" value="{{ row.status }}" class="form-control"></td>
+                    <td><input type="text" name="live_url" value="{{ row.live_url }}" class="form-control"></td>
+                    <td><input type="text" name="live_url_date" value="{{ row.live_url_date }}" class="form-control"></td>
+                    <td><input type="text" name="price" value="{{ row.price }}" class="form-control"></td>
+                    <td><input type="text" name="invoice_number" value="{{ row.invoice_number }}" class="form-control"></td>
+                    <td><input type="text" name="blogger_name" value="{{ row.blogger_name }}" class="form-control"></td>
+                    <td><input type="text" name="collected_status" value="{{ row.collected_status }}" class="form-control"></td>
+                    <td><input type="text" name="payment_status" value="{{ row.payment_status }}" class="form-control"></td>
+                    <td><button type="submit" class="btn btn-success btn-sm">Save</button></td>
+                </form>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Chart Script -->
+    <script>
+        const chartData = {
+            labels: [{% for row in bar_chart_data %}"{{ row.0 }}",{% endfor %}],
+            allocated: [{% for row in bar_chart_data %}{{ row.1 }},{% endfor %}],
+            live: [{% for row in bar_chart_data %}{{ row.2 }},{% endfor %}],
+            pending: [{% for row in bar_chart_data %}{{ row.3 }},{% endfor %}]
+        };
+
+        window.chart = echarts.init(document.getElementById('echartContainer'));
+
+        function renderChart() {
+    const type = document.getElementById('chartType').value;
+
+    // Clear previous chart
+    window.chart.clear();
+
+    let option;
+
+    if (type === 'bar' || type === 'line') {
+        option = {
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['Allocated', 'Live', 'Pending'] },
+            xAxis: { type: 'category', data: chartData.labels },
+            yAxis: { type: 'value' },
+            series: [
+                { name: 'Allocated', type: type, data: chartData.allocated },
+                { name: 'Live', type: type, data: chartData.live },
+                { name: 'Pending', type: type, data: chartData.pending }
+            ]
+        };
+    } else if (type === 'pie') {
+        option = {
+            tooltip: { trigger: 'item' },
+            legend: { top: 'bottom' },
+            series: [{
+                name: 'Total Links',
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['50%', '50%'],
+                data: chartData.labels.map((label, idx) => ({
+                    name: label,
+                    value: chartData.allocated[idx] + chartData.live[idx] + chartData.pending[idx]
+                })),
+                label: { formatter: '{b}: {c}' }
+            }]
+        };
+    }
+
+    window.chart.setOption(option);
+    window.chart.resize();
+}
+
+        renderChart();
+    </script>
+
+</body>
+</html>

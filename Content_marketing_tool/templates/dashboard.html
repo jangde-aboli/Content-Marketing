@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overview</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background-color: #f5f7fb; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100%; width: 220px;
+      background-color: #2c3e50; padding-top: 20px; color: #fff;
+    }
+    .sidebar h2 { font-size: 20px; font-weight: bold; margin-bottom: 30px; text-align: center; }
+    .sidebar a {
+      display: block; padding: 12px 20px; color: #fff; text-decoration: none;
+      font-size: 15px; transition: background 0.3s;
+    }
+    .sidebar a:hover { background-color: #34495e; border-radius: 4px; }
+    .content { margin-left: 240px; padding: 30px; }
+    .card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .metric { font-size: 28px; font-weight: bold; color: #2d3436; }
+    .metric-label { font-size: 14px; color: #636e72; }
+    h3 { font-weight: 600; font-size: 18px; margin-bottom: 15px; }
+    .check-website { margin-top: 40px; }
+    .check-website input { width: 70%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    .check-website button { padding: 8px 15px; border: none; border-radius: 5px; background: #0984e3; color: #fff; cursor: pointer; }
+    .check-website button:hover { background: #74b9ff; }
+    .results { margin-top: 20px; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>📌 Dashboard</h2>
+    <a href="{% url 'add-user' %}">👤 Add User</a>
+    <a href="{% url 'add-project' %}">📂 Add Project</a>
+    <a href="{% url 'add-in-existing-project' %}">➕ Existing Project</a>
+    <a href="{% url 'publication_list' %}">🌐 Publication Sites</a>
+    <a href="{% url 'user-dashboard' %}">📊 User Dashboard</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <h2 class="mb-3">Overview</h2>
+    <p class="text-muted">Manage your projects, publications, and users from one place.</p>
+
+    <!-- Metrics -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="metric">{{ avg_da }}</div>
+          <div class="metric-label">Avg Domain Authority</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="metric">{{ avg_dr }}</div>
+          <div class="metric-label">Avg Domain Rating</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="metric">{{ total_sites }}</div>
+          <div class="metric-label">Total Sites</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h3>Site Categories</h3>
+          <canvas id="categoryChart" height="150"></canvas>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h3>User Allocations</h3>
+          <canvas id="userChart" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Website Check Section -->
+    <div class="check-website">
+      <h3>🔍 Check Website Stats</h3>
+      <form method="post">
+        {% csrf_token %}
+        <input type="text" name="domain" placeholder="Enter website domain (e.g. example.com)" required>
+        <button type="submit">Check</button>
+      </form>
+
+      {% if domain_result %}
+  <div class="results">
+    <p><b>Domain:</b> {{ domain_result.domain }}</p>
+    <p><b>Spam Score:</b> {{ domain_result.spam_score }}</p>
+    <p><b>Estimated Monthly Traffic:</b> {{ domain_result.monthly_traffic }}</p>
+    <p><b>Indian Share %:</b> {{ domain_result.indian_share }}</p>
+  </div>
+{% endif %}
+
+    </div>
+
+  </div>
+
+<script>
+  // Categories Chart
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ categories|safe }},
+      datasets: [{
+        label: 'Sites',
+        data: {{ category_counts|safe }},
+        backgroundColor: '#6c5ce7'
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // User Allocations Chart
+  new Chart(document.getElementById('userChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ usernames|safe }},
+      datasets: [{
+        label: 'Assigned Projects',
+        data: {{ user_counts|safe }},
+        backgroundColor: '#00cec9'
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+</script>
+</body>
+</html>
